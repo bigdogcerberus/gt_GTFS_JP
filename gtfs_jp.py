@@ -44,22 +44,23 @@ cols = ["id", "route_id", "url", "header_text", "description_text"]
 df_alert = pd.DataFrame(columns=cols)
 
 # アラート情報の取得
-feed_alert = gtfs_realtime_pb2.FeedMessage()
-response = ur.urlopen('http://opendata.sagabus.info/alert.pb')
-feed_alert.ParseFromString(response.read())
+# feed_alert = gtfs_realtime_pb2.FeedMessage()
+# response = ur.urlopen('http://opendata.sagabus.info/alert.pb')
+# feed_alert.ParseFromString(response.read())
 
-if feed_alert.HasField:
-    for alert_entity in feed_alert.entity:
-        alert_data = pd.Series({'id': alert_entity.id,
-                                'rout_id': alert_entity.alert.informed_entity[0].route_id,
-                                'url': alert_entity.alert.url.translation[0].text,
-                                'header_text': alert_entity.alert.header_text.translation[0].text,
-                                'description_text': alert_entity.alert.description_text.translation[0].text
-                                })
-        df_alert = df_alert.append(alert_data, ignore_index=True)
-    alert_description = df_alert['url'][0]
-else:
-    alert_description = "can't get the data or has no field"
+# if feed_alert.HasField:
+#     print(feed_alert.entity)
+#     for alert_entity in feed_alert.entity:
+#         alert_data = pd.Series({'id': alert_entity.id,
+#                                 'rout_id': alert_entity.alert.informed_entity[0].route_id,
+#                                 'url': alert_entity.alert.url.translation[0].text,
+#                                 'header_text': alert_entity.alert.header_text.translation[0].text,
+#                                 'description_text': alert_entity.alert.description_text.translation[0].text
+#                                 })
+#         df_alert = df_alert.append(alert_data, ignore_index=True)
+#     alert_description = df_alert['url'][0]
+# else:
+#     alert_description = "can't get the data or has no field"
 
 
 def get_realtime_data():
@@ -84,7 +85,8 @@ def get_realtime_data():
             df_vehicle = df_vehicle.append(vehicle_data, ignore_index=True)
     else:
         realtime_data_message = "Out of service"
-        return realtime_data_message
+        status = False
+        return status, realtime_data_message, df_vehicle
 
     # if there is data, execute code following
     if data_flg:
@@ -95,7 +97,8 @@ def get_realtime_data():
         df_new['symbol'] = 'bus'
 
         realtime_data_message = "in operation"
-        return realtime_data_message, df_new
+        status = True
+        return status, realtime_data_message, df_new
 
 
 def figure_map(data_frame):
@@ -131,14 +134,15 @@ def figure_map(data_frame):
 
 
 st.write('佐賀県の路線バス情報')
-st.write(alert_description)
+st.write('http://www.bus.saga.saga.jp/index.php')
 
-message, dataframe = get_realtime_data()
+status,message, dataframe = get_realtime_data()
 st.write('現在の運行状況：' + message)
-figure_map(dataframe)
 
-st.write('GTFSデータの取得先は以下のとおりです。データ提供者サーバーの負担を軽減するため、本ページの高頻度での更新はご遠慮ください。')
-st.write('【静的データ公開事業者】')
-st.write('・佐賀市交通局・祐徳自動車株式会社・昭和自動車株式会社・佐賀市・嬉野市')
-st.write('【動的データ公開事業者】')
-st.write('・佐賀市交通局・祐徳自動車株式会社・昭和自動車株式会社')
+if status:
+    figure_map(dataframe)
+    st.write('GTFSデータの取得先は以下のとおりです。データ提供者サーバーの負担を軽減するため、本ページの高頻度での更新はご遠慮ください。')
+    st.write('【静的データ公開事業者】')
+    st.write('・佐賀市交通局・祐徳自動車株式会社・昭和自動車株式会社・佐賀市・嬉野市')
+    st.write('【動的データ公開事業者】')
+    st.write('・佐賀市交通局・祐徳自動車株式会社・昭和自動車株式会社')
