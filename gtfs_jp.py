@@ -65,8 +65,8 @@ df_alert = pd.DataFrame(columns=cols)
 
 def get_realtime_data():
     # カラムのみに空のDataFrameを作成
-    colmns = ["id", "trip_id", "latitude", "longitude", "current_stop_sequence", "timestamp", "vehicle_id"]
-    df_vehicle = pd.DataFrame(columns=colmns)
+    _columns = ["id", "trip_id", "latitude", "longitude", "current_stop_sequence", "timestamp", "vehicle_id"]
+    df_vehicle = pd.DataFrame(columns=_columns)
 
     feed_vehicle = gtfs_realtime_pb2.FeedMessage()
     res = ur.urlopen('http://opendata.sagabus.info/vehicle.pb')
@@ -82,23 +82,25 @@ def get_realtime_data():
                  'longitude': entity.vehicle.position.longitude,
                  "current_stop_sequence": entity.vehicle.current_stop_sequence,
                  "timestamp": entity.vehicle.timestamp, "vehicle_id": entity.vehicle.vehicle.id})
-            df_vehicle = df_vehicle.append(vehicle_data, ignore_index=True)
+            # df_vehicle = df_vehicle.append(vehicle_data, ignore_index=True)
+            df_vehicle = pd.concat([df_vehicle, pd.DataFrame([vehicle_data])], ignore_index=True)
+        print('dummy')
     else:
         realtime_data_message = "Out of service"
-        status = False
-        return status, realtime_data_message, df_vehicle
+        _status = False
+        return _status, realtime_data_message, df_vehicle
 
     # if there is data, execute code following
     if data_flg:
         # 運行データとリアルタイムデータをマージ（運行データに含まれる'trip_headsign'情報を利用したいため）
         df = pd.merge(df_vehicle, df_trips, on='trip_id', how='outer', indicator=True)
         df_new = df[df['_merge'] == 'both']
-        # maker用のsymmbolデータを作成
+        # maker用のsymbolデータを作成
         df_new['symbol'] = 'bus'
 
         realtime_data_message = "in operation"
-        status = True
-        return status, realtime_data_message, df_new
+        _status = True
+        return _status, realtime_data_message, df_new
 
 
 def figure_map(data_frame):
@@ -136,7 +138,7 @@ def figure_map(data_frame):
 st.write('佐賀県の路線バス情報')
 st.write('http://www.bus.saga.saga.jp/index.php')
 
-status,message, dataframe = get_realtime_data()
+status, message, dataframe = get_realtime_data()
 st.write('現在の運行状況：' + message)
 
 if status:
